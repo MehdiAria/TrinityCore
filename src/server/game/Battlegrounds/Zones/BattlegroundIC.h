@@ -23,8 +23,6 @@
 #include "BattlegroundScore.h"
 #include "Object.h"
 
-class MotionTransport;
-
 const uint32 BG_IC_Factions[2] =
 {
     1732, // Alliance

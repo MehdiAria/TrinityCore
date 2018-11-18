@@ -123,6 +123,7 @@ class TC_GAME_API MapTransport : public Transport
         */
         TempSummon* SummonPassenger(uint32 entry, Position const& pos, TempSummonType summonType, SummonPropertiesEntry const* properties = nullptr, uint32 duration = 0, Unit* summoner = nullptr, uint32 spellId = 0, uint32 vehId = 0);
 
+        uint32 GetTransportPeriod() const override { return GetUInt32Value(GAMEOBJECT_LEVEL); }
         void SetPeriod(uint32 period) { SetUInt32Value(GAMEOBJECT_LEVEL, period); }
 
         KeyFrameVec const& GetKeyFrames() const { return _transportInfo->keyFrames; }

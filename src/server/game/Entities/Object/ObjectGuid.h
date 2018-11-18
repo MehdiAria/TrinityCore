@@ -148,7 +148,7 @@ class TC_GAME_API ObjectGuid
         static typename std::enable_if<ObjectGuidTraits<type>::Global, ObjectGuid>::type Create(LowType counter) { return Global(type, counter); }
 
         template<HighGuid type>
-        static typename std::enable_if<ObjectGuidTraits<type>::MapSpecific && type != HighGuid::Transport, ObjectGuid>::type Create(uint32 entry, uint32 counter) { return MapSpecific(type, entry, counter); }
+        static typename std::enable_if<ObjectGuidTraits<type>::MapSpecific && type != HighGuid::Transport, ObjectGuid>::type Create(uint32 entry, LowType counter) { return MapSpecific(type, entry, counter); }
 
         ObjectGuid() { _data._guid = UI64LIT(0); }
         explicit ObjectGuid(uint64 guid) { _data._guid = guid; }
