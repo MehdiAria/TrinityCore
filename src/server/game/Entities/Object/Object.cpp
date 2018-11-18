@@ -596,7 +596,7 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint16 flags) const
 
     if (flags & UPDATEFLAG_VEHICLE)
     {
-        *data << float(self->GetOrientation());
+        *data << float(self->GetTransport() ? self->GetTransOffsetO() : self->GetOrientation());
         *data << uint32(self->GetVehicleKit()->GetVehicleInfo()->m_ID);
     }
 
