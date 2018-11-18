@@ -1607,7 +1607,7 @@ void Battleground::SpawnBGObject(uint32 type, uint32 respawntime)
         }
 }
 
-Creature* Battleground::AddCreature(uint32 entry, uint32 type, float x, float y, float z, float o, TeamId /*teamId = TEAM_NEUTRAL*/, uint32 respawntime /*= 0*/, Transport* transport)
+Creature* Battleground::AddCreature(uint32 entry, uint32 type, float x, float y, float z, float o, TeamId /*teamId = TEAM_NEUTRAL*/, uint32 respawntime /*= 0*/, MapTransport* transport)
 {
     // If the assert is called, means that BgCreatures must be resized!
     ASSERT(type < BgCreatures.size());
@@ -1616,9 +1616,9 @@ Creature* Battleground::AddCreature(uint32 entry, uint32 type, float x, float y,
     if (!map)
         return nullptr;
 
-    if (transport->ToMapTransport())
+    if (transport)
     {
-        if (Creature* creature = transport->ToMapTransport()->SummonPassenger(entry, { x, y, z, o }, TEMPSUMMON_MANUAL_DESPAWN))
+        if (Creature* creature = transport->SummonPassenger(entry, { x, y, z, o }, TEMPSUMMON_MANUAL_DESPAWN))
         {
             BgCreatures[type] = creature->GetGUID();
             return creature;
@@ -1661,7 +1661,7 @@ Creature* Battleground::AddCreature(uint32 entry, uint32 type, float x, float y,
     return creature;
 }
 
-Creature* Battleground::AddCreature(uint32 entry, uint32 type, Position const& pos, TeamId teamId /*= TEAM_NEUTRAL*/, uint32 respawntime /*= 0*/, Transport* transport)
+Creature* Battleground::AddCreature(uint32 entry, uint32 type, Position const& pos, TeamId teamId /*= TEAM_NEUTRAL*/, uint32 respawntime /*= 0*/, MapTransport* transport)
 {
     return AddCreature(entry, type, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), pos.GetOrientation(), teamId, respawntime, transport);
 }
