@@ -107,8 +107,8 @@ struct go_hoo_the_makers_lift_controller : public GameObjectAI
         if (!elevator)
             return true;
 
-        elevator->SetTransportState(GO_STATE_TRANSPORT_ACTIVE, action);
-        elevator->SetTransportState(GO_STATE_TRANSPORT_STOPPED, action);
+        //elevator->SetTransportState(GO_STATE_TRANSPORT_ACTIVE, action);
+        //elevator->SetTransportState(GO_STATE_TRANSPORT_STOPPED, action);
 
         return true;
     }

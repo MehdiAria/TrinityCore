@@ -23,6 +23,8 @@
 #include "BattlegroundScore.h"
 #include "Object.h"
 
+class MotionTransport;
+
 const uint32 BG_IC_Factions[2] =
 {
     1732, // Alliance
@@ -985,8 +987,8 @@ class BattlegroundIC : public Battleground
         BG_IC_GateState GateStatus[6];
         ICNodePoint nodePoint[7];
 
-        Transport* gunshipAlliance;
-        Transport* gunshipHorde;
+        MapTransport* gunshipAlliance;
+        MapTransport* gunshipHorde;
 
         uint32 GetNextBanner(ICNodePoint* node, uint32 team, bool returnDefinitve);
 
