@@ -515,7 +515,7 @@ void Transport::SetTransportState(GOState state, uint32 stopFrame /*= 0*/)
         else if (backwardsTimer)
             SetUInt32Value(GAMEOBJECT_LEVEL, getMSTime() + backwardsTimer);
         else
-            SetUInt32Value(GAMEOBJECT_LEVEL, getMSTime() - GetCurrentTransportTime() - stopTimer);
+            SetUInt32Value(GAMEOBJECT_LEVEL, getMSTime() + GetCurrentTransportTime() - stopTimer);
 
         state = GOState(GO_STATE_TRANSPORT_STOPPED + stopFrame);
     }
