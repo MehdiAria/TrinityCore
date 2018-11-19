@@ -61,16 +61,22 @@ class TC_GAME_API Transport : public GameObject, public TransportBase
         uint32 GetPathProgress() const { return GetGOValue()->Transport.PathProgress; }
         void SetPathProgress(uint32 val) { m_goValue.Transport.PathProgress = val; }
 
-        uint32 GetPauseTime() const { return _pauseTimer; }
-        void SetPauseTime(uint32 val) { _pauseTimer = val; }
-
         virtual uint32 GetTransportPeriod() const;
         void SetTransportState(GOState state, uint32 stopFrame = 0);
 
         void RelocateToProgress(uint32 progress);
 
-        void SetRelocatePassengersTimer(uint32 val) { _relocatePassengersTimer = val; }
-        uint32 GetRelocatePassengersTimer() const { return _relocatePassengersTimer; }
+        void SetDestinationStopFrameTime(uint32 time) { _destinationStopFrameTime = time; }
+        uint32 GetDestinationStopFrameTime() const { return _destinationStopFrameTime;  }
+
+        void SetCurrentTransportTime(uint32 time) { _currentTransportTime = time; }
+        uint32 GetCurrentTransportTime() const { return _currentTransportTime; }
+
+        void SetAlignmentTransportTime(uint32 time) { _alignmentTransportTime = time; }
+        uint32 GetAlightmentTransportTime() const { return _alignmentTransportTime; }
+
+        void SetLastStopFrameTime(uint32 time) { _lastStopFrameTime = time; }
+        uint32 GetLastStopFrameTime() const { return _lastStopFrameTime; }
 
     protected:
         void UpdatePassengerPositions(PassengerSet& passengers);
@@ -78,8 +84,10 @@ class TC_GAME_API Transport : public GameObject, public TransportBase
         PassengerSet _passengers;
         PassengerSet::iterator _passengerTeleportItr;
 
-        uint32 _relocatePassengersTimer;
-        uint32 _pauseTimer;
+        uint32 _destinationStopFrameTime;
+        uint32 _currentTransportTime;
+        uint32 _alignmentTransportTime;
+        uint32 _lastStopFrameTime;
         bool _isDynamicTransport;
         bool _initialRelocate;
 };

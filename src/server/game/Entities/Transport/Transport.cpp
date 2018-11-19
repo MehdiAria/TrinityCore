@@ -34,8 +34,8 @@
 #include "ZoneScript.h"
 
 Transport::Transport() : GameObject(),
-    _passengerTeleportItr(_passengers.begin()), _relocatePassengersTimer(0), _pauseTimer(0),
-    _isDynamicTransport(false), _initialRelocate(false)
+    _passengerTeleportItr(_passengers.begin()), _currentTransportTime(0), _destinationStopFrameTime(0),
+    _alignmentTransportTime(0), _lastStopFrameTime(0), _isDynamicTransport(false), _initialRelocate(false)
 {
     m_updateFlag |= UPDATEFLAG_TRANSPORT;
 }
@@ -177,7 +177,11 @@ bool Transport::Create(ObjectGuid::LowType guidlow, uint32 entry, Map* map, uint
     m_goValue.Transport.StopFrames = new std::vector<uint32>();
 
     if (m_goInfo->transport.Timeto2ndfloor > 0)
+    {
+        // If we have a stop frame we also need an additional one at 0ms
+        m_goValue.Transport.StopFrames->push_back(0);
         m_goValue.Transport.StopFrames->push_back(m_goInfo->transport.Timeto2ndfloor);
+    }
     if (m_goInfo->transport.Timeto3rdfloor > 0)
         m_goValue.Transport.StopFrames->push_back(m_goInfo->transport.Timeto3rdfloor);
     if (m_goInfo->transport.Timeto4thfloor > 0)
@@ -203,8 +207,8 @@ bool Transport::Create(ObjectGuid::LowType guidlow, uint32 entry, Map* map, uint
 
     SetPathProgress(pathProgress + stopTimer);
 
-    SetPauseTime(stopTimer);
-    SetRelocatePassengersTimer(stopTimer);
+    SetDestinationStopFrameTime(stopTimer);
+    SetCurrentTransportTime(stopTimer);
 
     if (gameObjectAddon && gameObjectAddon->InvisibilityValue)
     {
@@ -273,7 +277,7 @@ void Transport::Update(uint32 diff)
 
     if (_initialRelocate)
     {
-        RelocateToProgress(GetRelocatePassengersTimer());
+        RelocateToProgress(GetCurrentTransportTime());
         _initialRelocate = false;
     }
 
@@ -281,47 +285,80 @@ void Transport::Update(uint32 diff)
     {
         SetPathProgress(GetPathProgress() + diff);
 
-        SetRelocatePassengersTimer(GetRelocatePassengersTimer() + diff);
-        if (GetRelocatePassengersTimer() >= GetTransportPeriod())
-            SetRelocatePassengersTimer(GetRelocatePassengersTimer() % GetTransportPeriod());
+        SetCurrentTransportTime(GetCurrentTransportTime() + diff);
+        if (GetCurrentTransportTime() >= GetTransportPeriod())
+            SetCurrentTransportTime(GetCurrentTransportTime() % GetTransportPeriod());
     }
     else
     {
         if (GetGoState() == GO_STATE_TRANSPORT_ACTIVE)
         {
             // waiting at it's destination for state change, do nothing
-            if (GetRelocatePassengersTimer() == 0)
+            if (GetCurrentTransportTime() == GetDestinationStopFrameTime())
                 return;
 
             SetPathProgress(GetPathProgress() + diff);
 
             // GOState has changed before previous state was reached, move to new destination immediately
-            if (GetRelocatePassengersTimer() < GetPauseTime())
-                SetRelocatePassengersTimer(0);
-            else if (GetRelocatePassengersTimer() + diff < GetTransportPeriod())
-                SetRelocatePassengersTimer(GetRelocatePassengersTimer() + diff);
+            if (GetCurrentTransportTime() < GetDestinationStopFrameTime())
+                SetCurrentTransportTime(0);
+            else if (GetCurrentTransportTime() + diff < GetTransportPeriod())
+                SetCurrentTransportTime(GetCurrentTransportTime() + diff);
             else
-                SetRelocatePassengersTimer(0);
+                SetCurrentTransportTime(0);
         }
         else
         {
             // waiting at it's destination for state change, do nothing
-            if (GetRelocatePassengersTimer() == GetPauseTime())
+            if (GetCurrentTransportTime() == GetDestinationStopFrameTime())
                 return;
 
-            SetPathProgress(GetPathProgress() + diff);
+            int32 currentTime = GetCurrentTransportTime();
+            int32 destinationTime = GetDestinationStopFrameTime();
+            bool backwardsMovement = destinationTime < currentTime;
 
-            // GOState has changed before previous state was reached, move to new destination immediately
-            if (GetRelocatePassengersTimer() > GetPauseTime())
-                SetRelocatePassengersTimer(GetPauseTime());
-            else if (GetRelocatePassengersTimer() + diff < GetPauseTime())
-                SetRelocatePassengersTimer(GetRelocatePassengersTimer() + diff);
+            SetPathProgress(GetPathProgress() + std::max(0, int32(backwardsMovement ? (diff * -1) : diff)));
+
+            if (!backwardsMovement)
+            {
+                // GOState has changed before previous state was reached, move to new destination immediately
+                if (currentTime > destinationTime)
+                    SetCurrentTransportTime(destinationTime);
+                else if (int32(currentTime + diff) < destinationTime)
+                    SetCurrentTransportTime(currentTime + diff);
+                else
+                {
+                    SetCurrentTransportTime(destinationTime);
+                    SetAlignmentTransportTime(0);
+                }
+            }
             else
-                SetRelocatePassengersTimer(GetPauseTime());
+            {
+                uint32 timeDiff = diff;
+                // Skipping multiple stop frames while moving to frame 0. Align the steps to the travel time.
+                if (uint32 alignmentTime = GetAlightmentTransportTime())
+                {
+                    float alignmentPercentage = (float)alignmentTime / GetLastStopFrameTime();
+                    timeDiff += diff * alignmentPercentage;
+                }
+
+                // GOState has changed before previous state was reached, move to new destination immediately
+                if (currentTime < destinationTime)
+                    currentTime = destinationTime;
+                else if (int32(currentTime - timeDiff) > destinationTime)
+                    currentTime -= timeDiff;
+                else
+                {
+                    currentTime = destinationTime;
+                    SetAlignmentTransportTime(0);
+                }
+
+                SetCurrentTransportTime(currentTime);
+            }
         }
     }
 
-    RelocateToProgress(GetRelocatePassengersTimer());
+    RelocateToProgress(GetCurrentTransportTime());
 }
 
 void Transport::RelocateToProgress(uint32 progress)
@@ -445,17 +482,21 @@ uint32 Transport::GetTransportPeriod() const
 
 void Transport::SetTransportState(GOState state, uint32 stopFrame /*= 0*/)
 {
-    if (GetGoState() == state)
+    // Do not change the transport state before reaching the last selected destination
+    if (GetCurrentTransportTime() != GetDestinationStopFrameTime())
         return;
 
     ASSERT(m_goInfo->type == GAMEOBJECT_TYPE_TRANSPORT);
 
     uint32 stopTimer = 0;
+    uint32 backwardsTimer = 0;
 
     if (state == GO_STATE_TRANSPORT_ACTIVE)
     {
         if (GetGoState() >= GO_STATE_TRANSPORT_STOPPED)
             stopTimer = m_goValue.Transport.StopFrames->at(GetGoState() - GO_STATE_TRANSPORT_STOPPED);
+
+        SetUInt32Value(GAMEOBJECT_LEVEL, getMSTime() + stopTimer);
     }
     else
     {
@@ -464,6 +505,18 @@ void Transport::SetTransportState(GOState state, uint32 stopFrame /*= 0*/)
 
         stopTimer = m_goValue.Transport.StopFrames->at(stopFrame);
 
+        // Handling backwards movement. According to retail tests, a transport that returns to stop frame 0 is using the time between frame 0 and 1
+        if (!stopTimer)
+            backwardsTimer = m_goValue.Transport.StopFrames->at(stopFrame + 1);
+
+        // forward movement. target frame time - current frame time
+        if (GetCurrentTransportTime() < stopTimer)
+            SetUInt32Value(GAMEOBJECT_LEVEL, getMSTime() + stopTimer - GetCurrentTransportTime());
+        else if (backwardsTimer)
+            SetUInt32Value(GAMEOBJECT_LEVEL, getMSTime() + backwardsTimer);
+        else
+            SetUInt32Value(GAMEOBJECT_LEVEL, getMSTime() - GetCurrentTransportTime() - stopTimer);
+
         state = GOState(GO_STATE_TRANSPORT_STOPPED + stopFrame);
     }
 
@@ -471,9 +524,12 @@ void Transport::SetTransportState(GOState state, uint32 stopFrame /*= 0*/)
     if (m_goValue.Transport.AnimationInfo)
         pathProgress -= pathProgress % GetTransportPeriod();
 
-    SetPathProgress(pathProgress + stopTimer);
-    SetPauseTime(stopTimer);
-    SetUInt32Value(GAMEOBJECT_LEVEL, getMSTime() + stopTimer);
+    SetPathProgress(pathProgress + stopTimer + backwardsTimer);
+    SetDestinationStopFrameTime(stopTimer);
+    SetLastStopFrameTime(GetCurrentTransportTime());
+    if (GetCurrentTransportTime() > backwardsTimer)
+        SetAlignmentTransportTime(backwardsTimer);
+
     SetGoState(state);
 }
 
