@@ -1113,7 +1113,7 @@ bool MapTransport::TeleportTransport(uint32 newMapid, float x, float y, float z,
                 (*itr)->m_movementInfo.transport.pos.GetPosition(destX, destY, destZ, destO);
                 TransportBase::CalculatePassengerPosition(destX, destY, destZ, &destO, x, y, z, o);
 
-                //(*itr)->ToUnit()->NearTeleportTo(destX, destY, destZ, destO);
+                (*itr)->ToUnit()->NearTeleportTo(destX, destY, destZ, destO);
             }
         }
 
