@@ -287,7 +287,7 @@ public:
                 transMapID = transport->GetGOInfo()->moTransport.mapID;
 
             handler->PSendSysMessage(LANG_TRANSPORT_POSITION,
-                transMapID, transport->GetGOInfo()->moTransport.mapID, object->GetTransOffsetX(), object->GetTransOffsetY(), object->GetTransOffsetZ(), object->GetTransOffsetO(),
+                transMapID, object->GetTransOffsetX(), object->GetTransOffsetY(), object->GetTransOffsetZ(), object->GetTransOffsetO(),
                 transport->GetEntry(), transport->GetName().c_str());
             handler->PSendSysMessage(LANG_GRID_POSITION,
                 cell.GridX(), cell.GridY(), cell.CellX(), cell.CellY(), object->GetInstanceId(),
