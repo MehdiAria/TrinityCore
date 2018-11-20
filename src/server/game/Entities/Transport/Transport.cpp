@@ -80,6 +80,9 @@ void Transport::AddPassenger(WorldObject* passenger)
                         oldTransport->RemovePassenger(guardian);
 
                     AddPassenger(guardian);
+                    /// @HACK - transport models are not added to map's dynamic LoS calculations
+                    ///         because the current GameObjectModel cannot be moved without recreating
+                    guardian->AddUnitState(UNIT_STATE_IGNORE_PATHFINDING);
                 }
             }
         }
@@ -119,10 +122,19 @@ void Transport::RemovePassenger(WorldObject* passenger)
         TC_LOG_DEBUG("entities.transport", "Object %s removed from transport %s.", passenger->GetName().c_str(), GetName().c_str());
 
         if (Unit* unit = passenger->ToUnit())
+        {
             if (Guardian* guardian = unit->GetGuardianPet())
                 if (!guardian->IsPet() || guardian->GetCharmInfo()->GetCommandState() == COMMAND_FOLLOW)
+                {
                     if (guardian->GetTransGUID() == GetGUID())
+                    {
                         RemovePassenger(guardian);
+                        /// @HACK - transport models are not added to map's dynamic LoS calculations
+                        ///         because the current GameObjectModel cannot be moved without recreating
+                        guardian->ClearUnitState(UNIT_STATE_IGNORE_PATHFINDING);
+                    }
+                }
+        }
 
         if (Player* plr = passenger->ToPlayer())
         {
