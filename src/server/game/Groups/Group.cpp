@@ -2384,7 +2384,7 @@ InstanceGroupBind* Group::GetBoundInstance(MapEntry const* mapEntry)
         return nullptr;
 
     Difficulty difficulty = GetDifficulty(mapEntry->IsRaid());
-    return GetBoundInstance(difficulty, mapEntry->MapID);
+    return GetBoundInstance(difficulty, mapEntry->ID);
 }
 
 InstanceGroupBind* Group::GetBoundInstance(Difficulty difficulty, uint32 mapId)

@@ -1647,17 +1647,17 @@ struct MailTemplateEntry
 
 struct MapEntry
 {
-    uint32  MapID;                                          // 0
-    //char*       internalname;                             // 1 unused
+    uint32  ID;                                             // 0
+    //char* internalname;                             // 1 unused
     uint32  map_type;                                       // 2
     uint32  Flags;                                          // 3
     //uint32 unk4;                                          // 4 4.0.1
     //uint32 isPvP;                                         // 5        m_PVP 0 or 1 for battlegrounds (not arenas)
     char* name;                                             // 6        m_MapName_lang
-    uint32  linked_zone;                                    // 7        m_areaTableID
+    uint32 AreaTableID;                                     // 7        m_areaTableID
     //char*     hordeIntro;                                 // 8        m_MapDescription0_lang
     //char*     allianceIntro;                              // 9        m_MapDescription1_lang
-    uint32  multimap_id;                                    // 10       m_LoadingScreenID (LoadingScreens.dbc)
+    //uint32  multimap_id;                                  // 10       m_LoadingScreenID (LoadingScreens.dbc)
     //float   BattlefieldMapIconScale;                      // 11       m_minimapIconScale
     int32   entrance_map;                                   // 12       m_corpseMapID map_id of entrance map in ghost mode (continent always and in most cases = normal entrance)
     float   entrance_x;                                     // 13       m_corpseX entrance x coordinate in ghost mode  (in most cases = normal entrance)
@@ -1666,7 +1666,7 @@ struct MapEntry
     uint32  addon;                                          // 16       m_expansionID
     uint32  expireTime;                                     // 17       m_raidOffset
     uint32 maxPlayers;                                      // 18       m_maxPlayers
-    int32 rootPhaseMap;                                     // 19 new 4.0.0, mapid, related to phasing
+    int32 ParentMapID;                                      // 19       map_id of parent map
 
     // Helpers
     uint32 Expansion() const { return addon; }
@@ -1692,7 +1692,7 @@ struct MapEntry
 
     bool IsContinent() const
     {
-        return MapID == 0 || MapID == 1 || MapID == 530 || MapID == 571;
+        return ID == 0 || ID == 1 || ID == 530 || ID == 571;
     }
 
     bool IsDynamicDifficultyMap() const { return (Flags & MAP_FLAG_DYNAMIC_DIFFICULTY) != 0; }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -141,6 +141,7 @@ namespace VMAP
     If intersection is found within pMaxDist, sets pMaxDist to intersection distance and returns true.
     Else, pMaxDist is not modified and returns false;
     */
+
     bool StaticMapTree::getIntersectionTime(const G3D::Ray& pRay, float &pMaxDist, bool pStopAtFirstHit, ModelIgnoreFlags ignoreFlags) const
     {
         float distance = pMaxDist;
@@ -150,8 +151,8 @@ namespace VMAP
             pMaxDist = distance;
         return intersectionCallBack.didHit();
     }
-
     //=========================================================
+
     bool StaticMapTree::isInLineOfSight(const Vector3& pos1, const Vector3& pos2, ModelIgnoreFlags ignoreFlag) const
     {
         float maxDist = (pos2 - pos1).magnitude();
@@ -275,12 +276,19 @@ namespace VMAP
         }
         FILE* tf = OpenMapTileFile(basePath, mapID, tileX, tileY, vm).File;
         if (!tf)
-            result = LoadResult::FileNotFound;
+            return LoadResult::FileNotFound;
         else
         {
-            if (!readChunk(tf, chunk, VMAP_MAGIC, 8))
-                result = LoadResult::VersionMismatch;
-            fclose(tf);
+            std::string tilefile = basePath + getTileFileName(mapID, tileX, tileY);
+            FILE* tf = fopen(tilefile.c_str(), "rb");
+            if (!tf)
+                result = LoadResult::FileNotFound;
+            else
+            {
+                if (!readChunk(tf, chunk, VMAP_MAGIC, 8))
+                    result = LoadResult::VersionMismatch;
+                fclose(tf);
+            }
         }
         fclose(rf);
         return result;
@@ -411,6 +419,8 @@ namespace VMAP
         }
         else
             iLoadedTiles[packTileID(tileX, tileY)] = false;
+        TC_METRIC_EVENT("map_events", "LoadMapTile",
+            "Map: " + std::to_string(iMapID) + " TileX: " + std::to_string(tileX) + " TileY: " + std::to_string(tileY));
         return result;
     }
 

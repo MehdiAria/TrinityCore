@@ -429,7 +429,7 @@ class spell_venoxis_venomous_effusion : public SpellScript
 
         Position pos = caster->GetPosition();
         pos.m_positionZ += 5.0f;
-        pos.m_positionZ = GetCaster()->GetMap()->GetHeight(caster->GetPhaseShift(), pos) + 1.0f;
+        pos.m_positionZ = GetCaster()->GetMap()->GetHeight(caster->GetPhaseShift(), pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ()) + 1.0f;
         dest.Relocate(pos);
     }
 

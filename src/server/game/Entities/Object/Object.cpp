@@ -1195,7 +1195,7 @@ void MovementInfo::OutDebug()
 
 WorldObject::WorldObject(bool isWorldObject) : WorldLocation(), LastUsedScriptID(0),
 m_name(""), m_isActive(false), m_isFarVisible(false), m_isWorldObject(isWorldObject), m_zoneScript(nullptr),
-m_transport(nullptr), m_zoneId(0), m_areaId(0), m_staticFloorZ(VMAP_INVALID_HEIGHT), m_currMap(nullptr), m_InstanceId(0),
+m_transport(nullptr), m_currMap(nullptr), m_InstanceId(0),
 m_phaseMask(PHASEMASK_NORMAL), _dbPhase(0), m_notifyflags(0), m_executed_notifies(0),
 m_aiAnimKitId(0), m_movementAnimKitId(0), m_meleeAnimKitId(0)
 {
@@ -1287,28 +1287,6 @@ void WorldObject::_Create(ObjectGuid::LowType guidlow, HighGuid guidhigh, uint32
     m_phaseMask = phaseMask;
 }
 
-void WorldObject::UpdatePositionData()
-{
-    PositionFullTerrainStatus data;
-    GetMap()->GetFullTerrainStatusForPosition(GetPhaseShift(), GetPositionX(), GetPositionY(), GetPositionZ(), data);
-    ProcessPositionDataChanged(data);
-}
-
-void WorldObject::ProcessPositionDataChanged(PositionFullTerrainStatus const& data)
-{
-    m_zoneId = m_areaId = data.areaId;
-    if (AreaTableEntry const* area = sAreaTableStore.LookupEntry(m_areaId))
-        if (area->zone)
-            m_zoneId = area->zone;
-    m_outdoors = data.outdoors;
-    m_staticFloorZ = data.floorZ;
-}
-
-void WorldObject::AddToWorld()
-{
-    Object::AddToWorld();
-    GetMap()->GetZoneAndAreaId(GetPhaseShift(), m_zoneId, m_areaId, GetPositionX(), GetPositionY(), GetPositionZ());
-}
 void WorldObject::RemoveFromWorld()
 {
     if (!IsInWorld())
@@ -1317,6 +1295,21 @@ void WorldObject::RemoveFromWorld()
     DestroyForNearbyPlayers();
 
     Object::RemoveFromWorld();
+}
+
+uint32 WorldObject::GetZoneId() const
+{
+    return GetMap()->GetZoneId(GetPhaseShift(), m_positionX, m_positionY, m_positionZ);
+}
+
+uint32 WorldObject::GetAreaId() const
+{
+    return GetMap()->GetAreaId(GetPhaseShift(), m_positionX, m_positionY, m_positionZ);
+}
+
+void WorldObject::GetZoneAndAreaId(uint32& zoneid, uint32& areaid) const
+{
+    GetMap()->GetZoneAndAreaId(GetPhaseShift(), zoneid, areaid, m_positionX, m_positionY, m_positionZ);
 }
 
 InstanceScript* WorldObject::GetInstanceScript() const
@@ -2022,12 +2015,6 @@ void WorldObject::ResetMap()
     //maybe not for corpse
     //m_mapId = 0;
     //m_InstanceId = 0;
-}
-
-Map const* WorldObject::GetBaseMap() const
-{
-    ASSERT(m_currMap);
-    return m_currMap->GetParent();
 }
 
 void WorldObject::AddObjectToRemoveList()
@@ -2779,13 +2766,6 @@ MapTransport* WorldObject::GetMapTransport() const
         return GetTransport()->ToMapTransport();
 
     return nullptr;
-}
-
-float WorldObject::GetFloorZ() const
-{
-    if (!IsInWorld())
-        return m_staticFloorZ;
-    return std::max<float>(m_staticFloorZ, GetMap()->GetGameObjectFloor(GetPhaseShift(), GetPositionX(), GetPositionY(), GetPositionZ()));
 }
 
 template TC_GAME_API void WorldObject::GetGameObjectListWithEntryInGrid(std::list<GameObject*>&, uint32, float) const;

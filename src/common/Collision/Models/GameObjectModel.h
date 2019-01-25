@@ -30,6 +30,7 @@
 namespace VMAP
 {
     class WorldModel;
+    struct AreaInfo;
     enum class ModelIgnoreFlags : uint32;
 }
 
@@ -44,6 +45,7 @@ public:
 
     virtual bool IsSpawned() const = 0;
     virtual uint32 GetDisplayId() const = 0;
+    virtual uint8 GetNameSetId() const { return 0; }
     virtual bool IsInPhase(PhaseShift const& /*phaseShift*/) const = 0;
     virtual G3D::Vector3 GetPosition() const = 0;
     virtual float GetOrientation() const = 0;
@@ -68,6 +70,7 @@ public:
     bool isCollisionEnabled() const { return _collisionEnabled; }
 
     bool intersectRay(G3D::Ray const& ray, float& maxDist, bool stopAtFirstHit, PhaseShift const& phaseShift, VMAP::ModelIgnoreFlags ignoreFlags) const;
+    void intersectPoint(G3D::Vector3 const& point, VMAP::AreaInfo& info, PhaseShift const& phaseShift) const;
 
     static GameObjectModel* Create(std::unique_ptr<GameObjectModelOwnerBase> modelOwner, std::string const& dataPath);
 

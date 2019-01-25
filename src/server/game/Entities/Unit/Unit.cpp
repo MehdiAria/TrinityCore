@@ -521,6 +521,7 @@ void Unit::Update(uint32 p_time)
 
     UpdateSplineMovement(p_time);
     i_motionMaster->UpdateMotion(p_time);
+    UpdateUnderwaterState(GetMap(), GetPositionX(), GetPositionY(), GetPositionZ());
 
     // Update serverside orientation of channeled spells that are suposed to track the channel target
     if (Spell const* spell = m_currentSpells[CURRENT_CHANNELED_SPELL])
@@ -3271,50 +3272,59 @@ bool Unit::isInAccessiblePlaceFor(Creature const* c) const
 
 bool Unit::IsInWater() const
 {
-    return GetBaseMap()->IsInWater(GetPhaseShift(), GetPositionX(), GetPositionY(), GetPositionZ());
+    return GetMap()->IsInWater(GetPhaseShift(), GetPositionX(), GetPositionY(), GetPositionZ());
 }
 
 bool Unit::IsUnderWater() const
 {
-    return GetBaseMap()->IsUnderWater(GetPhaseShift(), GetPositionX(), GetPositionY(), GetPositionZ());
+    return GetMap()->IsUnderWater(GetPhaseShift(), GetPositionX(), GetPositionY(), GetPositionZ());
 }
 
-void Unit::ProcessPositionDataChanged(PositionFullTerrainStatus const& data)
+void Unit::UpdateUnderwaterState(Map* m, float x, float y, float z)
 {
-    WorldObject::ProcessPositionDataChanged(data);
-    ProcessTerrainStatusUpdate(data.liquidStatus, data.liquidInfo);
-}
-
-void Unit::ProcessTerrainStatusUpdate(ZLiquidStatus status, Optional<LiquidData> const& liquidData)
-{
-    if (IsFlying() || (!IsControlledByPlayer()))
+    if (IsFlying() || (!IsPet() && !IsVehicle()))
         return;
 
-    // remove appropriate auras if we are swimming/not swimming respectively
-    if (status & MAP_LIQUID_STATUS_SWIMMING)
-        RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_NOT_ABOVEWATER);
-    else
-        RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_NOT_UNDERWATER);
-
-    // liquid aura handling
-    LiquidTypeEntry const* curLiquid = nullptr;
-    if ((status & MAP_LIQUID_STATUS_SWIMMING) && liquidData)
-        curLiquid = sLiquidTypeStore.LookupEntry(liquidData->entry);
-    if (curLiquid != _lastLiquid)
+    LiquidData liquid_status;
+    ZLiquidStatus res = m->GetLiquidStatus(GetPhaseShift(), x, y, z, MAP_ALL_LIQUIDS, &liquid_status);
+    if (!res)
     {
         if (_lastLiquid && _lastLiquid->SpellId)
             RemoveAurasDueToSpell(_lastLiquid->SpellId);
-        Player* player = GetCharmerOrOwnerPlayerOrPlayerItself();
-        if (curLiquid && curLiquid->SpellId && (!player || !player->IsGameMaster()))
-            CastSpell(this, curLiquid->SpellId, true);
 
-        // Update mount capabilities when changing liquidstatus (enabling / disabling flight auras for example)
-        if (player)
-            player->UpdateMountCapabilities();
+        RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_NOT_UNDERWATER);
+        _lastLiquid = NULL;
+        return;
+    }
 
-        _lastLiquid = curLiquid;
+    if (uint32 liqEntry = liquid_status.entry)
+    {
+        LiquidTypeEntry const* liquid = sLiquidTypeStore.LookupEntry(liqEntry);
+        if (_lastLiquid && _lastLiquid->SpellId && _lastLiquid->Id != liqEntry)
+            RemoveAurasDueToSpell(_lastLiquid->SpellId);
+
+        if (liquid && liquid->SpellId)
+        {
+            if (res & (LIQUID_MAP_UNDER_WATER | LIQUID_MAP_IN_WATER))
+            {
+                if (!HasAura(liquid->SpellId))
+                    CastSpell(this, liquid->SpellId, true);
+            }
+            else
+                RemoveAurasDueToSpell(liquid->SpellId);
+        }
+
+        RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_NOT_ABOVEWATER);
+        _lastLiquid = liquid;
+    }
+    else if (_lastLiquid && _lastLiquid->SpellId)
+    {
+        RemoveAurasDueToSpell(_lastLiquid->SpellId);
+        RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_NOT_UNDERWATER);
+        _lastLiquid = nullptr;
     }
 }
+
 void Unit::DeMorph()
 {
     SetDisplayId(GetNativeDisplayId());
@@ -8357,7 +8367,7 @@ MountCapabilityEntry const* Unit::GetMountCapability(uint32 mountType) const
 
         if (mountCapability->RequiredMap != -1 &&
             int32(GetMapId()) != mountCapability->RequiredMap &&
-            GetMap()->GetEntry()->rootPhaseMap != mountCapability->RequiredMap)
+            GetMap()->GetEntry()->ParentMapID != mountCapability->RequiredMap)
             continue;
 
         if (mountCapability->RequiredArea && !IsInArea(areaId, mountCapability->RequiredArea))
@@ -13928,6 +13938,9 @@ bool Unit::UpdatePosition(float x, float y, float z, float orientation, bool tel
     }
     else if (turn)
         UpdateOrientation(orientation);
+
+    // code block for underwater state update
+    UpdateUnderwaterState(GetMap(), x, y, z);
 
     return (relocated || turn);
 }

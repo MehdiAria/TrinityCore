@@ -277,7 +277,6 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
         virtual void Update (uint32 /*time_diff*/) { }
 
         void _Create(ObjectGuid::LowType guidlow, HighGuid guidhigh, uint32 phaseMask);
-        void AddToWorld() override;
         void RemoveFromWorld() override;
 
         void GetNearPoint2D(float &x, float &y, float distance, float absAngle) const;
@@ -315,10 +314,9 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
         // if negative it is used as PhaseGroupId
         void SetDBPhase(int32 p) { _dbPhase = p; }
 
-        uint32 GetZoneId() const { return m_zoneId; }
-        uint32 GetAreaId() const { return m_areaId; }
-        void GetZoneAndAreaId(uint32& zoneid, uint32& areaid) const { zoneid = m_zoneId, areaid = m_areaId; }
-        bool IsOutdoors() const { return m_outdoors; }
+        uint32 GetZoneId() const;
+        uint32 GetAreaId() const;
+        void GetZoneAndAreaId(uint32& zoneid, uint32& areaid) const;
 
         InstanceScript* GetInstanceScript() const;
 
@@ -392,9 +390,6 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
         Map* FindMap() const { return m_currMap; }
         //used to check all object's GetMap() calls when object is not in world!
 
-        //this function should be removed in nearest time...
-        Map const* GetBaseMap() const;
-
         void SetZoneScript();
         void ClearZoneScript();
         ZoneScript* GetZoneScript() const { return m_zoneScript; }
@@ -425,7 +420,6 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
         void DestroyForNearbyPlayers();
         virtual void UpdateObjectVisibility(bool forced = true);
         virtual void UpdateObjectVisibilityOnCreate() { UpdateObjectVisibility(true); }
-        void UpdatePositionData();
 
         void BuildUpdate(UpdateDataMapType&) override;
 
@@ -473,8 +467,6 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
         virtual float GetStationaryZ() const { return GetPositionZ(); }
         virtual float GetStationaryO() const { return GetOrientation(); }
 
-        float GetFloorZ() const;
-
         uint16 GetAIAnimKitId() const { return m_aiAnimKitId; }
         void SetAIAnimKitId(uint16 animKitId);
         uint16 GetMovementAnimKitId() const { return m_movementAnimKitId; }
@@ -492,12 +484,6 @@ class TC_GAME_API WorldObject : public Object, public WorldLocation
 
         // transports
         Transport* m_transport;
-
-        virtual void ProcessPositionDataChanged(PositionFullTerrainStatus const& data);
-        uint32 m_zoneId;
-        uint32 m_areaId;
-        float m_staticFloorZ;
-        bool m_outdoors;
 
         //these functions are used mostly for Relocate() and Corpse/Player specific stuff...
         //use them ONLY in LoadFromDB()/Create() funcs and nowhere else!

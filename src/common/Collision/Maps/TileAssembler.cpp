@@ -1,20 +1,20 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+* Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
+*
+* This program is free software; you can redistribute it and/or modify it
+* under the terms of the GNU General Public License as published by the
+* Free Software Foundation; either version 2 of the License, or (at your
+* option) any later version.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT
+* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+* FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+* more details.
+*
+* You should have received a copy of the GNU General Public License along
+* with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include "TileAssembler.h"
 #include "BoundingIntervalHierarchy.h"
@@ -115,6 +115,7 @@ namespace VMAP
             }
 
             // ===> possibly move this code to StaticMapTree class
+
             // write map tree file
             std::stringstream mapfilename;
             mapfilename << iDestDir << '/' << std::setfill('0') << std::setw(3) << data.MapId << ".vmtree";
@@ -131,6 +132,7 @@ namespace VMAP
             // Nodes
             if (success && fwrite("NODE", 4, 1, mapfile) != 1) success = false;
             if (success) success = pTree.writeToFile(mapfile);
+
             // spawn id to index map
             uint32 mapSpawnsSize = mapSpawns.size();
             if (success && fwrite("SIDX", 4, 1, mapfile) != 1) success = false;
@@ -187,6 +189,7 @@ namespace VMAP
                 break;
             }
         }
+
         return success;
     }
 
@@ -204,8 +207,9 @@ namespace VMAP
         std::map<uint32, MapSpawns> data;
         while (!feof(dirf))
         {
+            check = 0;
             // read mapID, Flags, NameSet, UniqueId, Pos, Rot, Scale, Bound_lo, Bound_hi, name
-            check = fread(&mapID, sizeof(uint32), 1, dirf);
+            check += fread(&mapID, sizeof(uint32), 1, dirf);
             if (check == 0) // EoF...
                 break;
 
@@ -296,7 +300,7 @@ namespace VMAP
             for (uint32 g = 0; g < groups; ++g)
             {
                 GroupModel_Raw& raw_group = raw_model.groupsArray[g];
-                groupsArray.push_back(GroupModel(raw_group.mogpflags, raw_group.GroupWMOID, raw_group.bounds ));
+                groupsArray.push_back(GroupModel(raw_group.mogpflags, raw_group.GroupWMOID, raw_group.bounds));
                 groupsArray.back().setMeshData(raw_group.vertexArray, raw_group.triangles);
                 groupsArray.back().setLiquidData(raw_group.liquid);
             }
@@ -352,7 +356,7 @@ namespace VMAP
             std::string model_name(buff, name_length);
 
             WorldModel_Raw raw_model;
-            if (!raw_model.Read((iSrcDir + "/" + model_name).c_str()) )
+            if (!raw_model.Read((iSrcDir + "/" + model_name).c_str()))
                 continue;
 
             spawnedModelFiles.insert(model_name);
@@ -397,7 +401,7 @@ namespace VMAP
         fclose(model_list_copy);
     }
 
-// temporary use defines to simplify read/check code (close file and return at fail)
+    // temporary use defines to simplify read/check code (close file and return at fail)
 #define READ_OR_RETURN(V, S) if (fread((V), (S), 1, rf) != 1) { \
                                 fclose(rf); printf("readfail, op = %i\n", readOperation); return(false); }
 #define READ_OR_RETURN_WITH_DELETE(V, S) if (fread((V), (S), 1, rf) != 1) { \
@@ -430,7 +434,7 @@ namespace VMAP
         CMP_OR_RETURN(blockId, "GRP ");
         READ_OR_RETURN(&blocksize, sizeof(int));
         READ_OR_RETURN(&branches, sizeof(uint32));
-        for (uint32 b=0; b<branches; ++b)
+        for (uint32 b = 0; b<branches; ++b)
         {
             uint32 indexes;
             // indexes for each branch (not used jet)
@@ -446,10 +450,10 @@ namespace VMAP
         if (nindexes >0)
         {
             uint16 *indexarray = new uint16[nindexes];
-            READ_OR_RETURN_WITH_DELETE(indexarray, nindexes*sizeof(uint16));
+            READ_OR_RETURN_WITH_DELETE(indexarray, nindexes * sizeof(uint16));
             triangles.reserve(nindexes / 3);
-            for (uint32 i=0; i<nindexes; i+=3)
-                triangles.push_back(MeshTriangle(indexarray[i], indexarray[i+1], indexarray[i+2]));
+            for (uint32 i = 0; i<nindexes; i += 3)
+                triangles.push_back(MeshTriangle(indexarray[i], indexarray[i + 1], indexarray[i + 2]));
 
             delete[] indexarray;
         }
@@ -463,10 +467,10 @@ namespace VMAP
 
         if (nvectors >0)
         {
-            float *vectorarray = new float[nvectors*3];
-            READ_OR_RETURN_WITH_DELETE(vectorarray, nvectors*sizeof(float)*3);
-            for (uint32 i=0; i<nvectors; ++i)
-                vertexArray.push_back( Vector3(vectorarray + 3*i) );
+            float *vectorarray = new float[nvectors * 3];
+            READ_OR_RETURN_WITH_DELETE(vectorarray, nvectors * sizeof(float) * 3);
+            for (uint32 i = 0; i<nvectors; ++i)
+                vertexArray.push_back(Vector3(vectorarray + 3 * i));
 
             delete[] vectorarray;
         }

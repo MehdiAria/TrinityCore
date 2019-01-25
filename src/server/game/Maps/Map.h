@@ -167,26 +167,6 @@ struct LiquidData
     float  depth_level;
 };
 
-struct PositionFullTerrainStatus
-{
-    struct AreaInfo
-    {
-        AreaInfo(int32 _adtId, int32 _rootId, int32 _groupId, uint32 _flags) : adtId(_adtId), rootId(_rootId), groupId(_groupId), mogpFlags(_flags) { }
-        int32 const adtId;
-        int32 const rootId;
-        int32 const groupId;
-        uint32 const mogpFlags;
-    };
-
-    PositionFullTerrainStatus() : areaId(0), floorZ(0.0f), outdoors(true) { }
-    uint32 areaId;
-    float floorZ;
-    bool outdoors;
-    ZLiquidStatus liquidStatus;
-    Optional<AreaInfo> areaInfo;
-    Optional<LiquidData> liquidInfo;
-};
-
 class TC_GAME_API GridMap
 {
     uint32  _flags;
@@ -247,6 +227,7 @@ public:
     uint16 getArea(float x, float y) const;
     inline float getHeight(float x, float y) const {return (this->*_gridGetHeight)(x, y);}
     float getLiquidLevel(float x, float y) const;
+    uint8 getTerrainType(float x, float y) const;
     ZLiquidStatus GetLiquidStatus(float x, float y, float z, uint8 ReqLiquidType, LiquidData* data = 0);
     bool fileExists() const { return _fileExists; }
 };
@@ -398,27 +379,16 @@ class TC_GAME_API Map : public GridRefManager<NGridType>
         // can return INVALID_HEIGHT if under z+2 z coord not found height
         float GetStaticHeight(PhaseShift const& phaseShift, float x, float y, float z, bool checkVMap = true, float maxSearchDist = DEFAULT_HEIGHT_SEARCH) const;
 
-        void GetFullTerrainStatusForPosition(PhaseShift const& phaseShift, float x, float y, float z, PositionFullTerrainStatus& data, uint8 reqLiquidType = MAP_ALL_LIQUIDS) const;
         ZLiquidStatus GetLiquidStatus(PhaseShift const& phaseShift, float x, float y, float z, uint8 ReqLiquidType, LiquidData* data = nullptr) const;
 
+        uint32 GetAreaId(PhaseShift const& phaseShift, float x, float y, float z, bool *isOutdoors) const;
+        bool GetAreaInfo(PhaseShift const& phaseShift, float x, float y, float z, uint32& mogpflags, int32& adtId, int32& rootId, int32& groupId) const;
         uint32 GetAreaId(PhaseShift const& phaseShift, float x, float y, float z) const;
-        uint32 GetAreaId(PhaseShift const& phaseShift, Position const& pos) const
-        {
-            return GetAreaId(phaseShift, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ());
-        }
-
         uint32 GetZoneId(PhaseShift const& phaseShift, float x, float y, float z) const;
-        uint32 GetZoneId(PhaseShift const& phaseShift, Position const& pos) const
-        {
-            return GetZoneId(phaseShift, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ());
-        }
-
         void GetZoneAndAreaId(PhaseShift const& phaseShift, uint32& zoneid, uint32& areaid, float x, float y, float z) const;
-        void GetZoneAndAreaId(PhaseShift const& phaseShift, uint32& zoneid, uint32& areaid, Position const& pos) const
-        {
-            GetZoneAndAreaId(phaseShift, zoneid, areaid, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ());
-        }
+        bool IsOutdoors(PhaseShift const& phaseShift, float x, float y, float z) const;
 
+        uint8 GetTerrainType(PhaseShift const& phaseShift, float x, float y) const;
         float GetWaterLevel(PhaseShift const& phaseShift, float x, float y) const;
         bool IsInWater(PhaseShift const& phaseShift, float x, float y, float z, LiquidData* data = nullptr) const;
         bool IsUnderWater(PhaseShift const& phaseShift, float x, float y, float z) const;
@@ -565,9 +535,7 @@ class TC_GAME_API Map : public GridRefManager<NGridType>
 
         float GetWaterOrGroundLevel(PhaseShift const& phaseShift, float x, float y, float z, float* ground = nullptr, bool swim = false) const;
 
-        float GetHeight(PhaseShift const& phaseShift, float x, float y, float z, bool vmap = true, float maxSearchDist = DEFAULT_HEIGHT_SEARCH) const { return std::max<float>(GetStaticHeight(phaseShift, x, y, z, vmap, maxSearchDist), GetGameObjectFloor(phaseShift, x, y, z, maxSearchDist)); }
-        float GetHeight(PhaseShift const& phaseShift, Position const& pos, bool vmap = true, float maxSearchDist = DEFAULT_HEIGHT_SEARCH) const { return GetHeight(phaseShift, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), vmap, maxSearchDist); }
-
+        float GetHeight(PhaseShift const& phaseShift, float x, float y, float z, bool vmap = true, float maxSearchDist = DEFAULT_HEIGHT_SEARCH) const;
         bool isInLineOfSight(PhaseShift const& phaseShift, float x1, float y1, float z1, float x2, float y2, float z2, LineOfSightChecks checks, VMAP::ModelIgnoreFlags ignoreFlags) const;
         void Balance() { _dynamicTree.balance(); }
         void RemoveGameObjectModel(const GameObjectModel& model) { _dynamicTree.remove(model); }

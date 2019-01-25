@@ -740,7 +740,7 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recvData)
                 case Map::CANNOT_ENTER_DIFFICULTY_UNAVAILABLE:
                     TC_LOG_DEBUG("maps", "MAP: Player '%s' attempted to enter instance map %d but the requested difficulty was not found", player->GetName().c_str(), at->target_mapId);
                     if (MapEntry const* entry = sMapStore.LookupEntry(at->target_mapId))
-                        player->SendTransferAborted(entry->MapID, TRANSFER_ABORT_DIFFICULTY, player->GetDifficulty(entry->IsRaid()));
+                        player->SendTransferAborted(entry->ID, TRANSFER_ABORT_DIFFICULTY, player->GetDifficulty(entry->IsRaid()));
                     break;
                 case Map::CANNOT_ENTER_NOT_IN_RAID:
                 {
