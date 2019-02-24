@@ -1059,7 +1059,7 @@ void WorldObject::_Create(ObjectGuid::LowType guidlow, HighGuid guidhigh, uint32
 void WorldObject::UpdatePositionData()
 {
     PositionFullTerrainStatus data;
-    GetMap()->GetFullTerrainStatusForPosition(GetPositionX(), GetPositionY(), GetPositionZ(), data, MAP_ALL_LIQUIDS);
+    GetMap()->GetFullTerrainStatusForPosition(GetPositionX(), GetPositionY(), GetPositionZ(), data, MAP_ALL_LIQUIDS, GetCollisionHeight());
     ProcessPositionDataChanged(data);
 }
 
@@ -1938,10 +1938,12 @@ void WorldObject::SetZoneScript()
             m_zoneScript = (ZoneScript*)((InstanceMap*)map)->GetInstanceScript();
         else if (!map->IsBattlegroundOrArena())
         {
-            if (Battlefield* bf = sBattlefieldMgr->GetBattlefieldToZoneId(GetZoneId()))
+            uint32 zoneId = GetMap()->GetZoneId(GetPosition());
+
+            if (Battlefield* bf = sBattlefieldMgr->GetBattlefieldToZoneId(zoneId))
                 m_zoneScript = bf;
             else
-                m_zoneScript = sOutdoorPvPMgr->GetZoneScript(GetZoneId());
+                m_zoneScript = sOutdoorPvPMgr->GetZoneScript(zoneId);
         }
     }
 }
